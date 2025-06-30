@@ -32,7 +32,5 @@ const ReviewSchema = new mongoose.Schema({
   },
 })
 
-// Ensure one review per user per event
-ReviewSchema.index({ event: 1, user: 1 }, { unique: true })
 
 export default mongoose.models.Review || mongoose.model("Review", ReviewSchema)

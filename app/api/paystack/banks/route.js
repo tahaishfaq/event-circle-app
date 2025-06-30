@@ -7,7 +7,14 @@ export async function GET() {
       headers: {
         Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
       },
+      params: {
+        country: "south africa",
+        enabled_for_verification: true,
+        currency: "ZAR"
+      }
     })
+
+    // console.log("Paystack Banks Response:", response.data)
 
     if (response.data.status) {
       return NextResponse.json(response.data.data)
