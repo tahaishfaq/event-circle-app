@@ -44,7 +44,7 @@ export default function EventCard({ event }) {
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
       <div className="relative">
-        <video className="w-full h-48 object-cover" poster={event.videoThumbnail} controls preload="metadata">
+        <video className="w-full h-64 object-contain" poster={event.videoThumbnail} controls preload="metadata">
           <source src={event.eventVideo} type="video/mp4" />
           Your browser does not support the video tag.
         </video>

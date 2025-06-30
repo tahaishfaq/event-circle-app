@@ -87,11 +87,6 @@ export default function EventDetailPage() {
         await navigator.share(shareData);
       } catch (error) {
         console.error("Error sharing:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to share event",
-        });
       }
     } else {
       navigator.clipboard.writeText(window.location.href);
@@ -241,13 +236,13 @@ export default function EventDetailPage() {
             <Card className="overflow-hidden">
               <div className="relative">
                 <video
-                  className="w-full h-64 md:h-96 object-cover"
+                  className="w-full h-64 md:h-96 object-contain"
                   poster={event.videoThumbnail}
                   controls
                   preload="metadata"
                   aria-label={`Video for ${event.title}`}
                 >
-                  <source src={event.video} type="video/mp4" />
+                 <source src={event.eventVideo} type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
                 <div className="absolute top-4 left-4">
