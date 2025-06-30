@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { signIn } from "next-auth/react";
-
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 
 const validationSchema = Yup.object({
   email: Yup.string().email("Invalid email").required("Email is required"),
@@ -25,6 +25,7 @@ const validationSchema = Yup.object({
 
 export default function LoginForm() {
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const formik = useFormik({
@@ -45,7 +46,7 @@ export default function LoginForm() {
         console.log("Login result:", result);
 
         if (result?.error) {
-          setError("Invalid email or password");
+          setError(result?.error);
         } else {
           // Redirect based on user role
           const response = await fetch("/api/auth/session");
@@ -104,21 +105,34 @@ export default function LoginForm() {
               )}
             </div>
 
-            <div>
+            <div className="relative">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                value={formik.values.password}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                className={
-                  formik.touched.password && formik.errors.password
-                    ? "border-red-500"
-                    : ""
-                }
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  value={formik.values.password}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  className={
+                    formik.touched.password && formik.errors.password
+                      ? "border-red-500 pr-10"
+                      : "pr-10"
+                  }
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400" />
+                  )}
+                </button>
+              </div>
               {formik.touched.password && formik.errors.password && (
                 <p className="text-red-500 text-sm mt-1">
                   {formik.errors.password}

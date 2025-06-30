@@ -1,15 +1,17 @@
 "use client";
 
 import { SessionProvider } from "next-auth/react";
-import { ToastProvider } from "@/components/ui/toast";
+
 import "./globals.css";
+import { Toaster } from "@/components/ui/toaster";
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="font-geist" suppressHydrationWarning>
         <SessionProvider>
-          <ToastProvider>{children}</ToastProvider>
+          {children}
+          <Toaster />
         </SessionProvider>
       </body>
     </html>

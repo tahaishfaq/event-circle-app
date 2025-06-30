@@ -14,8 +14,6 @@ export async function GET() {
       }
     })
 
-    // console.log("Paystack Banks Response:", response.data)
-
     if (response.data.status) {
       return NextResponse.json(response.data.data)
     } else {

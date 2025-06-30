@@ -10,13 +10,15 @@ export async function POST(request) {
 
     await connectDB()
 
-    // Check if user already exists
-    const existingUser = await User.findOne({
-      $or: [{ email }, { username }],
-    })
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
+      return NextResponse.json({ message: "Username is already taken" }, { status: 400 });
+    }
 
-    if (existingUser) {
-      return NextResponse.json({ message: "User with this email or username already exists" }, { status: 400 })
+    // Check email next
+    const existingEmail = await User.findOne({ email });
+    if (existingEmail) {
+      return NextResponse.json({ message: "Email is already taken" }, { status: 400 });
     }
 
     // Hash password

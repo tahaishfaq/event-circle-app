@@ -22,11 +22,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Upload, User } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, Upload, User, Eye, EyeOff } from "lucide-react";
 
 const validationSchema = Yup.object({
   fullName: Yup.string().required("Full name is required"),
-  username: Yup.string().required("Username is required"),
+  username: Yup.string()
+    .required("Username is required")
+    .matches(
+      /^[a-zA-Z0-9][a-zA-Z0-9_.]*$/,
+      "Username must start with a letter or number and can only contain letters, numbers, underscores (_), or periods (.)"
+    )
+    .matches(
+      /^(?!@).*$/,
+      "Username cannot start with @"
+    ),
   email: Yup.string().email("Invalid email").required("Email is required"),
   password: Yup.string()
     .min(6, "Password must be at least 6 characters")
@@ -39,6 +49,7 @@ const validationSchema = Yup.object({
 export default function RegisterForm() {
   const [profilePicture, setProfilePicture] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const formik = useFormik({
@@ -50,6 +61,7 @@ export default function RegisterForm() {
       dateOfBirth: "",
       gender: "",
       phoneNumber: "",
+      serverError: "",
     },
     validationSchema,
     onSubmit: async (values) => {
@@ -70,7 +82,6 @@ export default function RegisterForm() {
           });
           console.log("Upload response:", response.data);
           profilePictureUrl = response.data.url;
-          setUploading(false);
         }
 
         await axios.post("/api/auth/register", {
@@ -81,10 +92,12 @@ export default function RegisterForm() {
         router.push("/auth/login?message=Registration successful");
       } catch (error) {
         console.error("Registration error:", error);
-        alert(error.response?.data?.message || "Registration failed");
-      }finally{
+        const errorMessage =
+          error.response?.data?.message || "Registration failed";
+        formik.setErrors({ serverError: errorMessage });
+      } finally {
         setUploading(false);
-        formik.isSubmitting = false;
+        formik.setSubmitting(false);
       }
     },
   });
@@ -109,6 +122,13 @@ export default function RegisterForm() {
         </CardHeader>
         <CardContent>
           <form onSubmit={formik.handleSubmit} className="space-y-4">
+            {formik.errors.serverError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{formik.errors.serverError}</AlertDescription>
+              </Alert>
+            )}
+
             <div>
               <Label htmlFor="fullName">Full Name</Label>
               <Input
@@ -175,21 +195,34 @@ export default function RegisterForm() {
               )}
             </div>
 
-            <div>
+            <div className="relative">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                value={formik.values.password}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                className={
-                  formik.touched.password && formik.errors.password
-                    ? "border-red-500"
-                    : ""
-                }
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  value={formik.values.password}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  className={
+                    formik.touched.password && formik.errors.password
+                      ? "border-red-500 pr-10"
+                      : "pr-10"
+                  }
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400" />
+                  )}
+                </button>
+              </div>
               {formik.touched.password && formik.errors.password && (
                 <p className="text-red-500 text-sm mt-1">
                   {formik.errors.password}
@@ -223,6 +256,7 @@ export default function RegisterForm() {
               <Label htmlFor="gender">Gender</Label>
               <Select
                 onValueChange={(value) => formik.setFieldValue("gender", value)}
+                value={formik.values.gender}
               >
                 <SelectTrigger
                   className={
