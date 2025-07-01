@@ -199,7 +199,7 @@ export default function PurchaseTicketPage() {
   if (loading || status === "loading") {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
+        {/* <Navbar /> */}
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
             <div
@@ -217,7 +217,7 @@ export default function PurchaseTicketPage() {
   if (!event) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
+        {/* <Navbar /> */}
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">
@@ -237,7 +237,7 @@ export default function PurchaseTicketPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      {/* <Navbar /> */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <Link href={`/events/${params.id}`}>
@@ -287,7 +287,7 @@ export default function PurchaseTicketPage() {
                       </div>
                       <div className="flex items-center">
                         <Clock className="h-4 w-4 mr-2" />
-                        {event.eventTime} ({event.duration})
+                        {event.eventTime} ({`${event.duration} hours`})
                       </div>
                       <div className="flex items-center">
                         <MapPin className="h-4 w-4 mr-2" />
@@ -446,7 +446,7 @@ export default function PurchaseTicketPage() {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span>Ticket Price</span>
-                    <span>${event.ticketPrice.toLocaleString()}</span>
+                    <span>R{event.ticketPrice.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Quantity</span>
@@ -454,23 +454,23 @@ export default function PurchaseTicketPage() {
                   </div>
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span>${subtotal.toLocaleString()}</span>
+                    <span>R{subtotal.toLocaleString()}</span>
                   </div>
                   <Separator />
                   <div className="space-y-2 text-sm text-gray-600">
                     <div className="flex justify-between">
                       <span>Platform Fee (13%)</span>
-                      <span>${platformFee.toFixed(2)}</span>
+                      <span>R{platformFee.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Creator Receives (87%)</span>
-                      <span>${creatorAmount.toFixed(2)}</span>
+                      <span>R{creatorAmount.toFixed(2)}</span>
                     </div>
                   </div>
                   <Separator />
                   <div className="flex justify-between font-semibold text-lg">
                     <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>R{total.toFixed(2)}</span>
                   </div>
                 </div>
 

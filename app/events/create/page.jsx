@@ -169,7 +169,7 @@ export default function CreateEventForm() {
 
   return (
     <div>
-      <Navbar />
+      {/* <Navbar /> */}
       <div className="max-w-2xl mx-auto py-8 px-4">
         <Card>
           <CardHeader>
@@ -324,7 +324,7 @@ export default function CreateEventForm() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="ticketPrice">Ticket Price ($)</Label>
+                  <Label htmlFor="ticketPrice">Ticket Price (R)</Label>
                   <Input
                     id="ticketPrice"
                     name="ticketPrice"

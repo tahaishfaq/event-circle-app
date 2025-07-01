@@ -183,7 +183,7 @@ export default function EventDetailPage() {
   if (loading || status === "loading") {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
+        {/* <Navbar /> */}
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
             <div
@@ -201,7 +201,7 @@ export default function EventDetailPage() {
   if (!event) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
+        {/* <Navbar /> */}
         <div className="flex items-center justify-center py-20">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">
@@ -227,7 +227,7 @@ export default function EventDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      {/* <Navbar /> */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
@@ -279,7 +279,7 @@ export default function EventDetailPage() {
                       </div>
                       <div className="flex items-center">
                         <Clock className="h-4 w-4 mr-2" aria-hidden="true" />
-                        {event.eventTime} ({event.duration})
+                        {event.eventTime} ({`${event.duration} hours`})
                       </div>
                       <div className="flex items-center">
                         <MapPin className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -461,7 +461,7 @@ export default function EventDetailPage() {
               <CardContent className="space-y-4">
                 <div className="text-center">
                   <div className="text-3xl font-bold text-green-600">
-                    ${event.ticketPrice}
+                    R{event.ticketPrice}
                   </div>
                   <p className="text-sm text-gray-600">per ticket</p>
                 </div>
@@ -476,7 +476,7 @@ export default function EventDetailPage() {
                   </div>
                   <div className="flex justify-between">
                     <span>Platform Fee (13%):</span>
-                    <span>${(event.ticketPrice * 0.13).toFixed(2)}</span>
+                    <span>R{(event.ticketPrice * 0.13).toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -592,7 +592,7 @@ export default function EventDetailPage() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Duration:</span>
-                  <span className="text-sm font-medium">{event.duration}</span>
+                  <span className="text-sm font-medium">{`${event.duration} hours`}</span>
                 </div>
               </CardContent>
             </Card>

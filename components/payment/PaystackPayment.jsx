@@ -67,16 +67,16 @@ export default function PaystackPayment({ event }) {
           </div>
           <div className="flex justify-between text-sm text-gray-600">
             <span>Platform Fee (13%):</span>
-            <span>${adminCut}</span>
+            <span>R{adminCut}</span>
           </div>
           <div className="flex justify-between text-sm text-gray-600">
             <span>Creator Receives:</span>
-            <span>${creatorAmount}</span>
+            <span>R{creatorAmount}</span>
           </div>
           <hr />
           <div className="flex justify-between font-semibold">
             <span>Total:</span>
-            <span>${event.ticketPrice}</span>
+            <span>R{event.ticketPrice}</span>
           </div>
         </div>
 

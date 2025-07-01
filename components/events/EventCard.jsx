@@ -77,7 +77,7 @@ export default function EventCard({ event }) {
             {event?.eventLocation?.address}
           </div>
           <div className="flex items-center">
-            <DollarSign className="h-4 w-4 mr-2" />${event.ticketPrice}
+            <DollarSign className="h-4 w-4 mr-2" />R{event.ticketPrice}
           </div>
         </div>
 
