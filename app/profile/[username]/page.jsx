@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import EventCard from "../../../components/events/EventCard";
 import { Users, Calendar, Settings, UserPlus, UserMinus } from "lucide-react";
-
+import UserReviewSection from "../../../components/global/UserReviewSection";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -77,9 +77,7 @@ export default function ProfilePage() {
       if (isFollowing) {
         await axios.post(`/api/users/${username}/unfollow`);
         setIsFollowing(false);
-        setFollowers((prev) =>
-          prev.filter((f) => f._id !== session.user.id)
-        );
+        setFollowers((prev) => prev.filter((f) => f._id !== session.user.id));
       } else {
         await axios.post(`/api/users/${username}/follow`);
         setIsFollowing(true);
@@ -137,7 +135,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Profile Header */}
         <Card className="mb-8">
           <CardContent className="p-6">
@@ -214,8 +212,9 @@ export default function ProfilePage() {
 
         {/* Profile Tabs */}
         <Tabs defaultValue="events" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="events">Events</TabsTrigger>
+            <TabsTrigger value="reviews">Reviews</TabsTrigger>
             <TabsTrigger value="followers">Followers</TabsTrigger>
             <TabsTrigger value="following">Following</TabsTrigger>
           </TabsList>
@@ -279,7 +278,9 @@ export default function ProfilePage() {
                         <div className="flex items-center space-x-3">
                           <Avatar className="h-10 w-10">
                             <AvatarImage
-                              src={follower.profilePicture || "/placeholder.svg"}
+                              src={
+                                follower.profilePicture || "/placeholder.svg"
+                              }
                               alt={`${follower.fullName}'s profile picture`}
                             />
                             <AvatarFallback>
@@ -311,6 +312,13 @@ export default function ProfilePage() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="reviews">
+            <UserReviewSection
+              username={user.username}
+              userId={user._id.toString()}
+            />
+          </TabsContent>
+
           <TabsContent value="following" className="mt-6">
             <Card>
               <CardHeader>
@@ -336,7 +344,8 @@ export default function ProfilePage() {
                           <Avatar className="h-10 w-10">
                             <AvatarImage
                               src={
-                                followedUser.profilePicture || "/placeholder.svg"
+                                followedUser.profilePicture ||
+                                "/placeholder.svg"
                               }
                               alt={`${followedUser.fullName}'s profile picture`}
                             />
@@ -357,9 +366,7 @@ export default function ProfilePage() {
                           variant="outline"
                           size="sm"
                           onClick={() =>
-                            router.push(
-                              `/profile/${followedUser.username}`
-                            )
+                            router.push(`/profile/${followedUser.username}`)
                           }
                           aria-label={`View ${followedUser.fullName}'s profile`}
                         >

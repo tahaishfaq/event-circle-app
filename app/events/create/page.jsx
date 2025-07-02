@@ -55,8 +55,15 @@ const categories = [
   "Health",
   "Education",
   "Entertainment",
+  "Culture",
+  "Religious",
+  "Recreational",
+  "Concert",
+  "Workshop",
+  "Party",
   "Other",
-];
+]
+
 
 export default function CreateEventForm() {
   const [eventVideo, setEventVideo] = useState(null);

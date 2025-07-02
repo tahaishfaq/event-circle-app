@@ -64,6 +64,7 @@ export default function RegisterForm() {
     onSubmit: async (values) => {
       try {
         console.log("values", values);
+        
         let profilePictureUrl = "";
 
         if (profilePicture) {

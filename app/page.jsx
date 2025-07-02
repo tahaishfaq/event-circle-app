@@ -19,18 +19,24 @@ import { Search, Plus, Filter } from "lucide-react";
 import Navbar from "@/components/global/Navbar";
 
 const categories = [
-  "all",
-  "music",
-  "sports",
-  "technology",
-  "business",
-  "arts",
-  "food",
-  "health",
-  "education",
-  "entertainment",
-  "other",
-];
+  { value: "all", label: "All Categories" },
+  { value: "music", label: "Music" },
+  { value: "sports", label: "Sports" },
+  { value: "technology", label: "Technology" },
+  { value: "business", label: "Business" },
+  { value: "arts", label: "Arts" },
+  { value: "food", label: "Food" },
+  { value: "health", label: "Health" },
+  { value: "education", label: "Education" },
+  { value: "entertainment", label: "Entertainment" },
+  { value: "culture", label: "Culture" },
+  { value: "religious", label: "Religious" },
+  { value: "recreational", label: "Recreational" },
+  { value: "concert", label: "Concert" },
+  { value: "workshop", label: "Workshop" },
+  { value: "party", label: "Party" },
+  { value: "other", label: "Other" },
+]
 
 export default function HomePage() {
   const { data: session } = useSession();
@@ -169,9 +175,9 @@ export default function HomePage() {
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category.charAt(0).toUpperCase() + category.slice(1)}
+                    {categories.map((category, index) => (
+                      <SelectItem key={index} value={category?.value}>
+                        {category?.label}
                       </SelectItem>
                     ))}
                   </SelectContent>

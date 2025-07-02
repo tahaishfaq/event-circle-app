@@ -63,6 +63,23 @@ const UserSchema = new mongoose.Schema({
     bankName: String,
     accountName: String,
   },
+  resetOTP: {
+    type: String,
+    default: null,
+  },
+  resetOTPExpiry: {
+    type: Date,
+    default: null,
+  },
+  // User reviews
+  averageRating: {
+    type: Number,
+    default: 0,
+  },
+  totalReviews: {
+    type: Number,
+    default: 0,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
