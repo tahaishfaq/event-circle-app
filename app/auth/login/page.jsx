@@ -140,6 +140,15 @@ export default function LoginForm() {
               )}
             </div>
 
+            <div className="mt-2 text-right">
+              <Link
+                href="/auth/forget-password"
+                className="text-sm text-blue-600 hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
+
             <Button
               type="submit"
               className="w-full"

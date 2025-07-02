@@ -71,7 +71,7 @@ const EventSchema = new mongoose.Schema({
   },
   ageRestrictions: {
     type: String,
-    enum: ["<18", "18-29", "30-39", "40<"],
+    enum: ["no-restriction", "<18", "18-29", "30-39", "40<"],
     required: true,
   },
   genderRestrictions: {

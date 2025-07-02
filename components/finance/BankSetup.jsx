@@ -329,7 +329,7 @@ export default function BankSetup({ onComplete }) {
                 })
               }
               placeholder="Enter your account number"
-              maxLength={10}
+              maxLength={11}
               aria-label="Enter your account number"
             />
           </div>

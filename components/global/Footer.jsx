@@ -78,10 +78,10 @@ export default function Footer() {
                 <Mail className="w-4 h-4 text-primary" />
                 <span>Truecirclevents@gmail.com</span>
               </div>
-              <div className="flex items-center gap-3">
+              {/* <div className="flex items-center gap-3">
                 <Phone className="w-4 h-4 text-primary" />
                 <span>+27 (0) 11 123 4567</span>
-              </div>
+              </div> */}
               <div className="flex items-center gap-3">
                 <MapPin className="w-4 h-4 text-primary" />
                 <span>Johannesburg, South Africa</span>

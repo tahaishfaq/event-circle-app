@@ -62,8 +62,7 @@ const categories = [
   "Workshop",
   "Party",
   "Other",
-]
-
+];
 
 export default function CreateEventForm() {
   const [eventVideo, setEventVideo] = useState(null);
@@ -434,6 +433,9 @@ export default function CreateEventForm() {
                       <SelectValue placeholder="Select age restriction" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="no-restriction">
+                        No Restriction
+                      </SelectItem>
                       <SelectItem value="<18">Under 18</SelectItem>
                       <SelectItem value="18-29">18 - 29</SelectItem>
                       <SelectItem value="30-39">30 - 39</SelectItem>
@@ -461,7 +463,7 @@ export default function CreateEventForm() {
                       <SelectValue placeholder="Select gender restriction" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Genders</SelectItem>
+                      <SelectItem value="all">No Restriction</SelectItem>
                       <SelectItem value="male">Male Only</SelectItem>
                       <SelectItem value="female">Female Only</SelectItem>
                     </SelectContent>
