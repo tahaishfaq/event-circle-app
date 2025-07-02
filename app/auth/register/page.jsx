@@ -23,7 +23,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Upload, User, Eye, EyeOff } from "lucide-react";
+import { AlertCircle, Upload, User, Eye, EyeOff, Trash2 } from "lucide-react";
 
 const validationSchema = Yup.object({
   fullName: Yup.string().required("Full name is required"),
@@ -45,6 +45,7 @@ const validationSchema = Yup.object({
 
 export default function RegisterForm() {
   const [profilePicture, setProfilePicture] = useState(null);
+  const [profilePictureUrl, setProfilePictureUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
@@ -63,31 +64,10 @@ export default function RegisterForm() {
     validationSchema,
     onSubmit: async (values) => {
       try {
-        console.log("values", values);
-        
-        let profilePictureUrl = "";
-
-        if (profilePicture) {
-          console.log("Uploading profile picture...", profilePicture);
-          setUploading(true);
-          const formData = new FormData();
-          formData.append("file", profilePicture);
-          formData.append("type", "image");
-
-          const response = await axios.post("/api/upload", formData, {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          });
-          console.log("Upload response:", response.data);
-          profilePictureUrl = response.data.url;
-        }
-
         await axios.post("/api/auth/register", {
           ...values,
           profilePicture: profilePictureUrl,
         });
-
         router.push("/auth/login?message=Registration successful");
       } catch (error) {
         console.error("Registration error:", error);
@@ -95,16 +75,47 @@ export default function RegisterForm() {
           error.response?.data?.message || "Registration failed";
         formik.setErrors({ serverError: errorMessage });
       } finally {
-        setUploading(false);
         formik.setSubmitting(false);
       }
     },
   });
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
       setProfilePicture(file);
+      setUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("type", "image");
+
+        const response = await axios.post("/api/upload", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        console.log("Upload response:", response.data);
+        setProfilePictureUrl(response.data.url);
+      } catch (error) {
+        console.error("Upload error:", error);
+        formik.setErrors({
+          serverError: error.response?.data?.message || "Image upload failed",
+        });
+        setProfilePicture(null);
+        setProfilePictureUrl("");
+      } finally {
+        setUploading(false);
+      }
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setProfilePicture(null);
+    setProfilePictureUrl("");
+    const fileInput = document.getElementById("profilePicture");
+    if (fileInput) {
+      fileInput.value = "";
     }
   };
 
@@ -304,16 +315,31 @@ export default function RegisterForm() {
             <div>
               <Label htmlFor="profilePicture">Profile Picture (Optional)</Label>
               <div className="mt-1 flex items-center space-x-4">
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 relative">
                   {profilePicture ? (
-                    <img
-                      className="h-12 w-12 rounded-full object-cover"
-                      src={
-                        URL.createObjectURL(profilePicture) ||
-                        "/placeholder.svg"
-                      }
-                      alt="Profile preview"
-                    />
+                    <div className="relative">
+                      <img
+                        className={`h-16 w-16 rounded-full object-cover ${
+                          uploading ? "opacity-50" : "opacity-100"
+                        }`}
+                        src={URL.createObjectURL(profilePicture)}
+                        alt="Profile preview"
+                      />
+                      {uploading && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-gray-900"></div>
+                        </div>
+                      )}
+                      {!uploading && (
+                        <button
+                          type="button"
+                          className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                          onClick={handleRemoveImage}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
                   ) : (
                     <User className="h-12 w-12 text-gray-400" />
                   )}
@@ -324,6 +350,7 @@ export default function RegisterForm() {
                     Upload Photo
                   </span>
                   <input
+                    id="profilePicture"
                     type="file"
                     className="hidden"
                     accept="image/*"
@@ -338,7 +365,9 @@ export default function RegisterForm() {
               className="w-full"
               disabled={formik.isSubmitting || uploading}
             >
-              {formik.isSubmitting || uploading
+              {uploading
+                ? "Uploading..."
+                : formik.isSubmitting
                 ? "Creating Account..."
                 : "Create Account"}
             </Button>
