@@ -131,7 +131,7 @@ export default function Navbar() {
         {isMenuOpen && (
           <div className="md:hidden border-t border-border">
             <div className="px-2 pt-2 pb-3 space-y-1 text-base font-medium">
-              <MobileNavItem href="/events" icon={Calendar} text="Events" />
+              <MobileNavItem href="/" icon={Calendar} text="Events" />
               <MobileNavItem href="/about" icon={Info} text="About" />
               <MobileNavItem href="/contact" icon={Phone} text="Contact" />
               {isAuthenticated ? (
