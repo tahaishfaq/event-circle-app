@@ -21,6 +21,10 @@ export async function POST(request) {
       return NextResponse.json({ message: "Email is already taken" }, { status: 400 });
     }
 
+    if (!dateOfBirth || isNaN(Date.parse(dateOfBirth))) {
+      return NextResponse.json({ message: "Invalid date of birth" }, { status: 400 });
+    }
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12)
 

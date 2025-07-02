@@ -33,10 +33,7 @@ const validationSchema = Yup.object({
       /^[a-zA-Z0-9][a-zA-Z0-9_.]*$/,
       "Username must start with a letter or number and can only contain letters, numbers, underscores (_), or periods (.)"
     )
-    .matches(
-      /^(?!@).*$/,
-      "Username cannot start with @"
-    ),
+    .matches(/^(?!@).*$/, "Username cannot start with @"),
   email: Yup.string().email("Invalid email").required("Email is required"),
   password: Yup.string()
     .min(6, "Password must be at least 6 characters")
@@ -66,6 +63,7 @@ export default function RegisterForm() {
     validationSchema,
     onSubmit: async (values) => {
       try {
+        console.log("values", values);
         let profilePictureUrl = "";
 
         if (profilePicture) {
