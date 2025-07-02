@@ -66,7 +66,7 @@ export default function RegisterForm() {
       try {
         await axios.post("/api/auth/register", {
           ...values,
-          profilePicture: profilePictureUrl,
+          profilePicture: profilePictureUrl || "",
         });
         router.push("/auth/login?message=Registration successful");
       } catch (error) {
