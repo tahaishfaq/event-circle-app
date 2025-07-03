@@ -68,7 +68,7 @@ export default function RegisterForm() {
           ...values,
           profilePicture: profilePictureUrl || "",
         });
-        router.push("/auth/verify-email?message=Registration successful. Please check your email for the OTP");
+        router.push("/auth/verify-email?message=Registration successful. Please check your email for the OTP&email=" + values.email);
       } catch (error) {
         console.error("Registration error:", error);
         const errorMessage =
