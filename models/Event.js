@@ -70,13 +70,13 @@ const EventSchema = new mongoose.Schema({
     required: true,
   },
   ageRestrictions: {
-    type: String,
+    type: [String],
     enum: ["no-restriction", "<18", "18-29", "30-39", "40<"],
     required: true,
   },
   genderRestrictions: {
     type: String,
-    enum: ["male", "female", "all"],
+    enum: ["male", "female", "all", "other"],
     default: "all",
   },
   creator: {

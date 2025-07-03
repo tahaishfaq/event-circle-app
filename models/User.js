@@ -1,4 +1,5 @@
 import mongoose from "mongoose"
+import crypto from "crypto"
 
 const UserSchema = new mongoose.Schema({
   fullName: {
@@ -71,6 +72,19 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  // Email verification fields
+  isEmailVerified: {
+    type: Boolean,
+    default: false,
+  },
+  emailVerificationOTP: {
+    type: String,
+    default: null,
+  },
+  emailVerificationExpires: {
+    type: Date,
+    default: null,
+  },
   // User reviews
   averageRating: {
     type: Number,
@@ -85,5 +99,6 @@ const UserSchema = new mongoose.Schema({
     default: Date.now,
   },
 })
+
 
 export default mongoose.models.User || mongoose.model("User", UserSchema)

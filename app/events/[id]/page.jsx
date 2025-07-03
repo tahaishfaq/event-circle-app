@@ -24,7 +24,7 @@ import {
   Trash2,
 } from "lucide-react";
 import moment from "moment";
-import ReviewSection from "@/components/events/ReviewSection"
+import ReviewSection from "@/components/events/ReviewSection";
 
 /**
  * EventDetailPage component for displaying event details
@@ -39,7 +39,6 @@ export default function EventDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
   const [showAllAttendees, setShowAllAttendees] = useState(false);
-
 
   const fetchEventDetails = useCallback(async () => {
     if (!params.id || event) {
@@ -242,7 +241,7 @@ export default function EventDetailPage() {
                   preload="metadata"
                   aria-label={`Video for ${event.title}`}
                 >
-                 <source src={event.eventVideo} type="video/mp4" />
+                  <source src={event.eventVideo} type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
                 <div className="absolute top-4 left-4">
@@ -262,8 +261,6 @@ export default function EventDetailPage() {
                 </div>
               </div>
             </Card>
-
-            
 
             <Card>
               <CardHeader>
@@ -336,20 +333,45 @@ export default function EventDetailPage() {
                   <Separator />
 
                   {/* Event Restrictions */}
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3">
+                  <div className="space-y-4">
+                    <h3 className="text-xl font-semibold">
                       Event Requirements
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Age Restriction */}
                       <div>
-                        <span className="font-medium">Age Restriction:</span>
-                        <Badge variant="outline" className="ml-2">
-                          {event.ageRestrictions || "None"}
-                        </Badge>
+                        <span className="block text-sm font-medium mb-1">
+                          Age Restriction:
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {event.ageRestrictions &&
+                          event.ageRestrictions.length > 0 ? (
+                            event.ageRestrictions.map((restriction, index) => (
+                              <Badge key={index} variant="outline">
+                                {restriction === "no-restriction"
+                                  ? "No Restriction"
+                                  : restriction === "<18"
+                                  ? "Under 18"
+                                  : restriction === "18-29"
+                                  ? "18 - 29"
+                                  : restriction === "30-39"
+                                  ? "30 - 39"
+                                  : "40 and above"}
+                              </Badge>
+                            ))
+                          ) : (
+                            <Badge variant="outline">None</Badge>
+                          )}
+                        </div>
                       </div>
+
+                      {/* Gender Restriction */}
                       <div>
-                        <span className="font-medium">Gender Restriction:</span>
-                        <Badge variant="outline" className="ml-2">
+                        <span className="block text-sm font-medium mb-1">
+                          Gender Restriction:
+                        </span>
+                        <Badge variant="outline">
                           {event.genderRestrictions === "all"
                             ? "All Genders"
                             : event.genderRestrictions || "None"}
@@ -357,7 +379,6 @@ export default function EventDetailPage() {
                       </div>
                     </div>
                   </div>
-
                   <Separator />
 
                   {/* Attendees */}
@@ -373,7 +394,9 @@ export default function EventDetailPage() {
                           size="sm"
                           onClick={() => setShowAllAttendees(!showAllAttendees)}
                           aria-label={
-                            showAllAttendees ? "Show fewer attendees" : "Show all attendees"
+                            showAllAttendees
+                              ? "Show fewer attendees"
+                              : "Show all attendees"
                           }
                         >
                           {showAllAttendees ? "Show Less" : "Show All"}
@@ -550,11 +573,16 @@ export default function EventDetailPage() {
                     onClick={handleFollow}
                     variant={isFollowing ? "outline" : "default"}
                     className="w-full"
-                    aria-label={isFollowing ? "Unfollow creator" : "Follow creator"}
+                    aria-label={
+                      isFollowing ? "Unfollow creator" : "Follow creator"
+                    }
                   >
                     {isFollowing ? (
                       <>
-                        <UserMinus className="h-4 w-4 mr-2" aria-hidden="true" />
+                        <UserMinus
+                          className="h-4 w-4 mr-2"
+                          aria-hidden="true"
+                        />
                         Unfollow
                       </>
                     ) : (

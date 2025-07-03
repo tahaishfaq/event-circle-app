@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -25,6 +24,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Upload, Video } from "lucide-react";
 import Navbar from "@/components/global/Navbar";
 import GoogleMapsInput from "@/components/ui/GoogleMapsInput";
@@ -43,7 +44,10 @@ const validationSchema = Yup.object({
     .min(1, "Capacity must be at least 1")
     .required("Capacity is required"),
   eventDescription: Yup.string().required("Event description is required"),
-  ageRestrictions: Yup.string().required("Age restrictions are required"),
+  ageRestrictions: Yup.array()
+    .min(1, "At least one age restriction is required")
+    .required("Age restrictions are required"),
+  genderRestrictions: Yup.string().required("Gender restriction is required"),
 });
 
 const categories = [
@@ -56,7 +60,21 @@ const categories = [
   "Health",
   "Education",
   "Entertainment",
+  "Culture",
+  "Religious",
+  "Recreational",
+  "Concert",
+  "Workshop",
+  "Party",
   "Other",
+];
+
+const ageRestrictionOptions = [
+  { value: "no-restriction", label: "No Restriction" },
+  { value: "<18", label: "Under 18" },
+  { value: "18-29", label: "18 - 29" },
+  { value: "30-39", label: "30 - 39" },
+  { value: "40<", label: "40 and above" },
 ];
 
 export default function EditEventForm() {
@@ -83,7 +101,7 @@ export default function EditEventForm() {
       capacity: "",
       eventDescription: "",
       additionalInfo: "",
-      ageRestrictions: "",
+      ageRestrictions: [],
       genderRestrictions: "all",
     },
     validationSchema,
@@ -168,7 +186,7 @@ export default function EditEventForm() {
           capacity: event.capacity || "",
           eventDescription: event.eventDescription || "",
           additionalInfo: event.additionalInfo || "",
-          ageRestrictions: event.ageRestrictions || "",
+          ageRestrictions: event.ageRestrictions || [],
           genderRestrictions: event.genderRestrictions || "all",
         });
       } catch (error) {
@@ -198,6 +216,18 @@ export default function EditEventForm() {
   const handleLocationChange = (address, data) => {
     formik.setFieldValue("eventLocation", address);
     setLocationData(data);
+  };
+
+  const handleAgeRestrictionChange = (value) => {
+    const currentRestrictions = formik.values.ageRestrictions;
+    if (currentRestrictions.includes(value)) {
+      formik.setFieldValue(
+        "ageRestrictions",
+        currentRestrictions.filter((r) => r !== value)
+      );
+    } else {
+      formik.setFieldValue("ageRestrictions", [...currentRestrictions, value]);
+    }
   };
 
   return (
@@ -440,30 +470,19 @@ export default function EditEventForm() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="ageRestrictions">Age Restrictions</Label>
-                  <Select
-                    onValueChange={(value) =>
-                      formik.setFieldValue("ageRestrictions", value)
-                    }
-                    value={formik.values.ageRestrictions}
-                  >
-                    <SelectTrigger
-                      className={
-                        formik.touched.ageRestrictions &&
-                        formik.errors.ageRestrictions
-                          ? "border-red-500"
-                          : ""
-                      }
-                    >
-                      <SelectValue placeholder="Select age restriction" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="<18">Under 18</SelectItem>
-                      <SelectItem value="18-29">18 - 29</SelectItem>
-                      <SelectItem value="30-39">30 - 39</SelectItem>
-                      <SelectItem value="40<">40 and above</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>Age Restrictions</Label>
+                  <div className="space-y-2 mt-2">
+                    {ageRestrictionOptions.map((option) => (
+                      <div key={option.value} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={option.value}
+                          checked={formik.values.ageRestrictions.includes(option.value)}
+                          onCheckedChange={() => handleAgeRestrictionChange(option.value)}
+                        />
+                        <Label htmlFor={option.value}>{option.label}</Label>
+                      </div>
+                    ))}
+                  </div>
                   {formik.touched.ageRestrictions &&
                     formik.errors.ageRestrictions && (
                       <p className="text-red-500 text-sm mt-1">
@@ -473,24 +492,33 @@ export default function EditEventForm() {
                 </div>
 
                 <div>
-                  <Label htmlFor="genderRestrictions">
-                    Gender Restrictions
-                  </Label>
-                  <Select
+                  <Label>Gender Restrictions</Label>
+                  <RadioGroup
                     onValueChange={(value) =>
                       formik.setFieldValue("genderRestrictions", value)
                     }
                     value={formik.values.genderRestrictions}
+                    className="space-y-2 mt-2"
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select gender restriction" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Genders</SelectItem>
-                      <SelectItem value="male">Male Only</SelectItem>
-                      <SelectItem value="female">Female Only</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="all" id="gender-all" />
+                      <Label htmlFor="gender-all">All Genders</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="male" id="gender-male" />
+                      <Label htmlFor="gender-male">Male</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="female" id="gender-female" />
+                      <Label htmlFor="gender-female">Female</Label>
+                    </div>
+                  </RadioGroup>
+                  {formik.touched.genderRestrictions &&
+                    formik.errors.genderRestrictions && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {formik.errors.genderRestrictions}
+                      </p>
+                    )}
                 </div>
               </div>
 
