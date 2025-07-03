@@ -123,7 +123,7 @@ export default function FinancePage() {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">Total Earnings</p>
-                      <p className="text-2xl font-bold text-gray-900">${stats.totalEarnings.toFixed(2)}</p>
+                      <p className="text-2xl font-bold text-gray-900">R{stats.totalEarnings.toFixed(2)}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -137,7 +137,7 @@ export default function FinancePage() {
                     </div>
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">This Month</p>
-                      <p className="text-2xl font-bold text-gray-900">${stats.thisMonthEarnings.toFixed(2)}</p>
+                      <p className="text-2xl font-bold text-gray-900">R{stats.thisMonthEarnings.toFixed(2)}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -181,7 +181,7 @@ export default function FinancePage() {
                     <p className="text-sm text-blue-600 mt-1">
                       When someone buys a ticket for your event, Paystack automatically splits the payment: 87% goes
                       directly to your bank account, and 13% is kept by the platform as a service fee. Payments are
-                      typically settled within 24 hours.
+                      typically settled within 36 hours.
                     </p>
                   </div>
                 </div>
@@ -240,8 +240,8 @@ export default function FinancePage() {
                                   </div>
                                 </div>
                                 <div className="text-right">
-                                  <p className="font-semibold text-lg">${earning.creatorEarning.toFixed(2)}</p>
-                                  <p className="text-sm text-gray-600">Total: ${earning.totalAmount.toFixed(2)}</p>
+                                  <p className="font-semibold text-lg">R{earning.creatorEarning.toFixed(2)}</p>
+                                  <p className="text-sm text-gray-600">Total: R{earning.totalAmount.toFixed(2)}</p>
                                   <Badge variant="outline" className="mt-1">
                                     Settled
                                   </Badge>
