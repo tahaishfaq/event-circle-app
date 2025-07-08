@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import axios from "axios";
@@ -26,7 +26,8 @@ import {
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Upload, Video } from "lucide-react";
+import { Upload, Video, Loader2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import Navbar from "@/components/global/Navbar";
 import GoogleMapsInput from "@/components/ui/GoogleMapsInput";
 
@@ -65,7 +66,7 @@ const categories = [
   "Recreational",
   "Concert",
   "Workshop",
-  "Party",
+  "Party Suite",
   "Other",
 ];
 
@@ -83,11 +84,16 @@ export default function EditEventForm() {
   const [existingVideoUrl, setExistingVideoUrl] = useState(null); // For existing video URL
   const [existingThumbnailUrl, setExistingThumbnailUrl] = useState(null); // For existing thumbnail URL
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  const [thumbnailProgress, setThumbnailProgress] = useState(0);
+  const [videoError, setVideoError] = useState(null);
   const { data: session } = useSession();
   const router = useRouter();
   const { id } = useParams();
   const [locationData, setLocationData] = useState(null);
   const [initialEventData, setInitialEventData] = useState(null);
+  const videoInputRef = useRef(null);
 
   const formik = useFormik({
     initialValues: {
@@ -124,6 +130,12 @@ export default function EditEventForm() {
               headers: {
                 "Content-Type": "multipart/form-data",
               },
+              onUploadProgress: (progressEvent) => {
+                const percentCompleted = Math.round(
+                  (progressEvent.loaded * 100) / progressEvent.total
+                );
+                setUploadProgress(percentCompleted);
+              },
             }
           );
           videoUrl = videoUploadResponse.data.url;
@@ -134,12 +146,19 @@ export default function EditEventForm() {
           thumbnailFormData.append("file", videoThumbnail);
           thumbnailFormData.append("type", "image");
 
+          setThumbnailUploading(true);
           const thumbnailUploadResponse = await axios.post(
             `/api/upload`,
             thumbnailFormData,
             {
               headers: {
                 "Content-Type": "multipart/form-data",
+              },
+              onUploadProgress: (progressEvent) => {
+                const percentCompleted = Math.round(
+                  (progressEvent.loaded * 100) / progressEvent.total
+                );
+                setThumbnailProgress(percentCompleted);
               },
             }
           );
@@ -155,9 +174,15 @@ export default function EditEventForm() {
         });
 
         setUploading(false);
+        setUploadProgress(0);
+        setThumbnailUploading(false);
+        setThumbnailProgress(0);
         router.push("/");
       } catch (error) {
         setUploading(false);
+        setUploadProgress(0);
+        setThumbnailUploading(false);
+        setThumbnailProgress(0);
         console.error("Event update error:", error);
       }
     },
@@ -199,10 +224,39 @@ export default function EditEventForm() {
     }
   }, [id]);
 
-  const handleVideoChange = (e) => {
+  const checkVideoDuration = (file) => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src);
+        if (video.duration > 60) {
+          reject("Video duration must not exceed 1 minute");
+        } else {
+          resolve();
+        }
+      };
+      video.onerror = () => {
+        window.URL.revokeObjectURL(video.src);
+        reject("Error loading video");
+      };
+      video.src = URL.createObjectURL(file);
+    });
+  };
+
+  const handleVideoChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      setEventVideo(file);
+      try {
+        await checkVideoDuration(file);
+        setEventVideo(file);
+        setVideoError(null);
+      } catch (error) {
+        setVideoError(error);
+        setEventVideo(null);
+        videoInputRef.current.value = null;
+        alert(error);
+      }
     }
   };
 
@@ -524,7 +578,7 @@ export default function EditEventForm() {
 
               <div className="space-y-4">
                 <div>
-                  <Label>Event Video</Label>
+                  <Label>Event Video (Max 1 minute)</Label>
                   <div className="mt-1 flex items-center space-x-4">
                     <div className="flex-shrink-0">
                       {eventVideo || existingVideoUrl ? (
@@ -542,6 +596,7 @@ export default function EditEventForm() {
                         type="file"
                         className="hidden"
                         accept="video/*"
+                        ref={videoInputRef}
                         onChange={handleVideoChange}
                       />
                     </label>
@@ -551,22 +606,40 @@ export default function EditEventForm() {
                       </span>
                     )}
                   </div>
+                  {uploading && (
+                    <div className="mt-2">
+                      <Progress value={uploadProgress} className="w-full" />
+                      <p className="text-sm text-gray-600 mt-1">
+                        Uploading: {uploadProgress}%
+                      </p>
+                    </div>
+                  )}
+                  {videoError && (
+                    <p className="text-red-500 text-sm mt-1">{videoError}</p>
+                  )}
                 </div>
 
                 <div>
                   <Label>Video Thumbnail</Label>
                   <div className="mt-1 flex items-center space-x-4">
-                    <div className="flex-shrink-0">
+                    <div className="flex-shrink-0 relative">
                       {videoThumbnail || existingThumbnailUrl ? (
-                        <img
-                          className="h-12 w-12 rounded object-cover"
-                          src={
-                            videoThumbnail
-                              ? URL.createObjectURL(videoThumbnail)
-                              : existingThumbnailUrl || "/placeholder.svg"
-                          }
-                          alt="Thumbnail preview"
-                        />
+                        <div className="relative">
+                          <img
+                            className="h-12 w-12 rounded object-cover"
+                            src={
+                              videoThumbnail
+                                ? URL.createObjectURL(videoThumbnail)
+                                : existingThumbnailUrl || "/placeholder.svg"
+                            }
+                            alt="Thumbnail preview"
+                          />
+                          {thumbnailUploading && (
+                            <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center rounded">
+                              <Loader2 className="h-6 w-6 text-white animate-spin" />
+                            </div>
+                          )}
+                        </div>
                       ) : (
                         <div className="h-12 w-12 bg-gray-200 rounded flex items-center justify-center">
                           <Upload className="h-6 w-6 text-gray-400" />
@@ -599,9 +672,9 @@ export default function EditEventForm() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={formik.isSubmitting || uploading}
+                disabled={formik.isSubmitting || uploading || thumbnailUploading}
               >
-                {formik.isSubmitting || uploading
+                {formik.isSubmitting || uploading || thumbnailUploading
                   ? "Updating Event..."
                   : "Update Event"}
               </Button>

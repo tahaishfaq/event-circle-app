@@ -1,3 +1,5 @@
+
+
 // "use client";
 
 // import { useState } from "react";
@@ -24,6 +26,8 @@
 //   CardHeader,
 //   CardTitle,
 // } from "@/components/ui/card";
+// import { Checkbox } from "@/components/ui/checkbox";
+// import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 // import { Upload, Video } from "lucide-react";
 // import Navbar from "@/components/global/Navbar";
 // import GoogleMapsInput from "@/components/ui/GoogleMapsInput";
@@ -42,7 +46,10 @@
 //     .min(1, "Capacity must be at least 1")
 //     .required("Capacity is required"),
 //   eventDescription: Yup.string().required("Event description is required"),
-//   ageRestrictions: Yup.string().required("Age restrictions are required"),
+//   ageRestrictions: Yup.array()
+//     .min(1, "At least one age restriction is required")
+//     .required("Age restrictions are required"),
+//   genderRestrictions: Yup.string().required("Gender restriction is required"),
 // });
 
 // const categories = [
@@ -62,6 +69,14 @@
 //   "Workshop",
 //   "Party",
 //   "Other",
+// ];
+
+// const ageRestrictionOptions = [
+//   { value: "no-restriction", label: "No Restriction" },
+//   { value: "<18", label: "Under 18" },
+//   { value: "18-29", label: "18 - 29" },
+//   { value: "30-39", label: "30 - 39" },
+//   { value: "40<", label: "40 and above" },
 // ];
 
 // export default function CreateEventForm() {
@@ -84,7 +99,7 @@
 //       capacity: "",
 //       eventDescription: "",
 //       additionalInfo: "",
-//       ageRestrictions: "",
+//       ageRestrictions: [],
 //       genderRestrictions: "all",
 //     },
 //     validationSchema,
@@ -138,7 +153,6 @@
 //           })
 //           .then((res) => {
 //             console.log("Event created successfully:", res.data);
-
 //             setUploading(false);
 //             router.push("/");
 //           });
@@ -168,9 +182,20 @@
 //   const handleLocationChange = (address, data) => {
 //     console.log("Selected address:", address);
 //     console.log("Location data:", data);
-
 //     formik.setFieldValue("eventLocation", address);
 //     setLocationData(data);
+//   };
+
+//   const handleAgeRestrictionChange = (value) => {
+//     const currentRestrictions = formik.values.ageRestrictions;
+//     if (currentRestrictions.includes(value)) {
+//       formik.setFieldValue(
+//         "ageRestrictions",
+//         currentRestrictions.filter((r) => r !== value)
+//       );
+//     } else {
+//       formik.setFieldValue("ageRestrictions", [...currentRestrictions, value]);
+//     }
 //   };
 
 //   return (
@@ -416,32 +441,19 @@
 
 //               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 //                 <div>
-//                   <Label htmlFor="ageRestrictions">Age Restrictions</Label>
-//                   <Select
-//                     onValueChange={(value) =>
-//                       formik.setFieldValue("ageRestrictions", value)
-//                     }
-//                   >
-//                     <SelectTrigger
-//                       className={
-//                         formik.touched.ageRestrictions &&
-//                         formik.errors.ageRestrictions
-//                           ? "border-red-500"
-//                           : ""
-//                       }
-//                     >
-//                       <SelectValue placeholder="Select age restriction" />
-//                     </SelectTrigger>
-//                     <SelectContent>
-//                       <SelectItem value="no-restriction">
-//                         No Restriction
-//                       </SelectItem>
-//                       <SelectItem value="<18">Under 18</SelectItem>
-//                       <SelectItem value="18-29">18 - 29</SelectItem>
-//                       <SelectItem value="30-39">30 - 39</SelectItem>
-//                       <SelectItem value="40<">40 and above</SelectItem>
-//                     </SelectContent>
-//                   </Select>
+//                   <Label>Age Restrictions</Label>
+//                   <div className="space-y-2 mt-2">
+//                     {ageRestrictionOptions.map((option) => (
+//                       <div key={option.value} className="flex items-center space-x-2">
+//                         <Checkbox
+//                           id={option.value}
+//                           checked={formik.values.ageRestrictions.includes(option.value)}
+//                           onCheckedChange={() => handleAgeRestrictionChange(option.value)}
+//                         />
+//                         <Label htmlFor={option.value}>{option.label}</Label>
+//                       </div>
+//                     ))}
+//                   </div>
 //                   {formik.touched.ageRestrictions &&
 //                     formik.errors.ageRestrictions && (
 //                       <p className="text-red-500 text-sm mt-1">
@@ -451,23 +463,37 @@
 //                 </div>
 
 //                 <div>
-//                   <Label htmlFor="genderRestrictions">
-//                     Gender Restrictions
-//                   </Label>
-//                   <Select
+//                   <Label>Gender Restrictions</Label>
+//                   <RadioGroup
 //                     onValueChange={(value) =>
 //                       formik.setFieldValue("genderRestrictions", value)
 //                     }
+//                     value={formik.values.genderRestrictions}
+//                     className="space-y-2 mt-2"
 //                   >
-//                     <SelectTrigger>
-//                       <SelectValue placeholder="Select gender restriction" />
-//                     </SelectTrigger>
-//                     <SelectContent>
-//                       <SelectItem value="all">No Restriction</SelectItem>
-//                       <SelectItem value="male">Male Only</SelectItem>
-//                       <SelectItem value="female">Female Only</SelectItem>
-//                     </SelectContent>
-//                   </Select>
+//                     <div className="flex items-center space-x-2">
+//                       <RadioGroupItem value="all" id="gender-all" />
+//                       <Label htmlFor="gender-all">No Restriction</Label>
+//                     </div>
+//                     <div className="flex items-center space-x-2">
+//                       <RadioGroupItem value="male" id="gender-male" />
+//                       <Label htmlFor="gender-male">Male</Label>
+//                     </div>
+//                     <div className="flex items-center space-x-2">
+//                       <RadioGroupItem value="female" id="gender-female" />
+//                       <Label htmlFor="gender-female">Female</Label>
+//                     </div>
+//                     <div className="flex items-center space-x-2">
+//                       <RadioGroupItem value="other" id="other" />
+//                       <Label htmlFor="other">Other</Label>
+//                     </div>
+//                   </RadioGroup>
+//                   {formik.touched.genderRestrictions &&
+//                     formik.errors.genderRestrictions && (
+//                       <p className="text-red-500 text-sm mt-1">
+//                         {formik.errors.genderRestrictions}
+//                       </p>
+//                     )}
 //                 </div>
 //               </div>
 
@@ -559,7 +585,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import axios from "axios";
@@ -579,13 +605,14 @@ import {
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Upload, Video } from "lucide-react";
+import { Upload, Video, Loader2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import Navbar from "@/components/global/Navbar";
 import GoogleMapsInput from "@/components/ui/GoogleMapsInput";
 
@@ -640,9 +667,14 @@ export default function CreateEventForm() {
   const [eventVideo, setEventVideo] = useState(null);
   const [videoThumbnail, setVideoThumbnail] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  const [thumbnailProgress, setThumbnailProgress] = useState(0);
+  const [videoError, setVideoError] = useState(null);
   const { data: session } = useSession();
   const router = useRouter();
   const [locationData, setLocationData] = useState(null);
+  const videoInputRef = useRef(null);
 
   const formik = useFormik({
     initialValues: {
@@ -681,6 +713,12 @@ export default function CreateEventForm() {
             headers: {
               "Content-Type": "multipart/form-data",
             },
+            onUploadProgress: (progressEvent) => {
+              const percentCompleted = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+              setUploadProgress(percentCompleted);
+            },
           }
         );
 
@@ -689,12 +727,19 @@ export default function CreateEventForm() {
         thumbnailFormData.append("file", videoThumbnail);
         thumbnailFormData.append("type", "image");
 
+        setThumbnailUploading(true);
         const thumbnailUploadResponse = await axios.post(
           `/api/upload`,
           thumbnailFormData,
           {
             headers: {
               "Content-Type": "multipart/form-data",
+            },
+            onUploadProgress: (progressEvent) => {
+              const percentCompleted = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+              setThumbnailProgress(percentCompleted);
             },
           }
         );
@@ -711,21 +756,54 @@ export default function CreateEventForm() {
           .then((res) => {
             console.log("Event created successfully:", res.data);
             setUploading(false);
+            setUploadProgress(0);
+            setThumbnailUploading(false);
+            setThumbnailProgress(0);
             router.push("/");
           });
       } catch (error) {
         setUploading(false);
+        setUploadProgress(0);
+        setThumbnailUploading(false);
+        setThumbnailProgress(0);
         console.error("Event creation error:", error);
-      } finally {
-        setUploading(false);
       }
     },
   });
 
-  const handleVideoChange = (e) => {
+  const checkVideoDuration = (file) => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src);
+        if (video.duration > 60) {
+          reject("Video duration must not exceed 1 minute");
+        } else {
+          resolve();
+        }
+      };
+      video.onerror = () => {
+        window.URL.revokeObjectURL(video.src);
+        reject("Error loading video");
+      };
+      video.src = URL.createObjectURL(file);
+    });
+  };
+
+  const handleVideoChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      setEventVideo(file);
+      try {
+        await checkVideoDuration(file);
+        setEventVideo(file);
+        setVideoError(null);
+      } catch (error) {
+        setVideoError(error);
+        setEventVideo(null);
+        videoInputRef.current.value = null;
+        alert(error);
+      }
     }
   };
 
@@ -1056,7 +1134,7 @@ export default function CreateEventForm() {
 
               <div className="space-y-4">
                 <div>
-                  <Label>Event Video</Label>
+                  <Label>Event Video (Max 1 minute)</Label>
                   <div className="mt-1 flex items-center space-x-4">
                     <div className="flex-shrink-0">
                       {eventVideo ? (
@@ -1074,6 +1152,7 @@ export default function CreateEventForm() {
                         type="file"
                         className="hidden"
                         accept="video/*"
+                        ref={videoInputRef}
                         onChange={handleVideoChange}
                       />
                     </label>
@@ -1083,21 +1162,39 @@ export default function CreateEventForm() {
                       </span>
                     )}
                   </div>
+                  {uploading && (
+                    <div className="mt-2">
+                      <Progress value={uploadProgress} className="w-full" />
+                      <p className="text-sm text-gray-600 mt-1">
+                        Uploading: {uploadProgress}%
+                      </p>
+                    </div>
+                  )}
+                  {videoError && (
+                    <p className="text-red-500 text-sm mt-1">{videoError}</p>
+                  )}
                 </div>
 
                 <div>
                   <Label>Video Thumbnail</Label>
                   <div className="mt-1 flex items-center space-x-4">
-                    <div className="flex-shrink-0">
+                    <div className="flex-shrink-0 relative">
                       {videoThumbnail ? (
-                        <img
-                          className="h-12 w-12 rounded object-cover"
-                          src={
-                            URL.createObjectURL(videoThumbnail) ||
-                            "/placeholder.svg"
-                          }
-                          alt="Thumbnail preview"
-                        />
+                        <div className="relative">
+                          <img
+                            className="h-12 w-12 rounded object-cover"
+                            src={
+                              URL.createObjectURL(videoThumbnail) ||
+                              "/placeholder.svg"
+                            }
+                            alt="Thumbnail preview"
+                          />
+                          {thumbnailUploading && (
+                            <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center rounded">
+                              <Loader2 className="h-6 w-6 text-white animate-spin" />
+                            </div>
+                          )}
+                        </div>
                       ) : (
                         <div className="h-12 w-12 bg-gray-200 rounded flex items-center justify-center">
                           <Upload className="h-6 w-6 text-gray-400" />
@@ -1125,9 +1222,9 @@ export default function CreateEventForm() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={formik.isSubmitting || uploading}
+                disabled={formik.isSubmitting || uploading || thumbnailUploading}
               >
-                {formik.isSubmitting || uploading
+                {formik.isSubmitting || uploading || thumbnailUploading
                   ? "Creating Event..."
                   : "Create Event"}
               </Button>

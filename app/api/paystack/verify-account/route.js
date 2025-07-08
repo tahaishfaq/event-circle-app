@@ -5,29 +5,39 @@
 //   try {
 //     const { accountNumber, bankCode } = await request.json()
 
-//     const response = await axios.get(
-//       `https://api.paystack.co/bank/resolve?account_number=${accountNumber}&bank_code=${bankCode}`,
-//       {
-//         headers: {
-//           Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-//         },
+//     if (!accountNumber || !bankCode) {
+//       return NextResponse.json(
+//         { message: "accountNumber and bankCode are required" },
+//         { status: 400 }
+//       )
+//     }
+
+//     const response = await axios.get("https://api.paystack.co/bank/resolve", {
+//       headers: {
+//         Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
 //       },
-//     )
+//       params: {
+//         account_number: accountNumber,
+//         bank_code: bankCode,
+//       },
+//     })
 
 //     if (response.data.status) {
+//       const data = response.data.data
 //       return NextResponse.json({
-//         accountName: response.data.data.account_name,
-//         accountNumber: response.data.data.account_number,
-//         bankId: response.data.data.bank_id,
+//         accountName: data.account_name,
+//         accountNumber: data.account_number,
+//         bankId: data.bank_id,
 //       })
 //     } else {
 //       return NextResponse.json({ message: "Account verification failed" }, { status: 400 })
 //     }
 //   } catch (error) {
-//     console.error("Account verification error:", error)
+//     console.error("Account verification error:", error.response?.data || error.message)
 //     return NextResponse.json({ message: "Account verification failed" }, { status: 500 })
 //   }
 // }
+
 
 import { NextResponse } from "next/server";
 import axios from "axios";
