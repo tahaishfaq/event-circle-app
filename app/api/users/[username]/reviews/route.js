@@ -168,7 +168,7 @@ export async function POST(request, { params }) {
   }
 }
 
-// Helper function to update user's average rating
+
 async function updateUserRating(userId) {
   const stats = await UserReview.aggregate([
     { $match: { reviewee: new mongoose.Types.ObjectId(userId) } },
