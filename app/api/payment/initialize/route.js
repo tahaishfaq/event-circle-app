@@ -77,15 +77,6 @@ export async function POST(request) {
       return NextResponse.json({ message: "Event creator must set up payment account first" }, { status: 400 })
     }
 
-    // Validate capacity
-    const remainingCapacity = event.capacity - event.attendees.length;
-    if (quantity > remainingCapacity) {
-      return NextResponse.json(
-        { message: `Only ${remainingCapacity} ticket(s) remaining` },
-        { status: 400 }
-      );
-    }
-
     // Calculate amounts in kobo (Paystack uses kobo)
     const totalAmountKobo = Math.round(amount * 100)
 
