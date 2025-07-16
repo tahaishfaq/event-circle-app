@@ -1,5 +1,3 @@
-
-
 // "use client";
 
 // import { useState } from "react";
@@ -582,7 +580,6 @@
 //   );
 // }
 
-
 "use client";
 
 import { useState, useRef } from "react";
@@ -704,23 +701,19 @@ export default function CreateEventForm() {
         // Upload video
         const videoFormData = new FormData();
         videoFormData.append("file", eventVideo);
-        videoFormData.append("type", "video");
+        videoFormData.append("upload_preset", "eventcircle_unsigned"); // your unsigned preset
+        videoFormData.append("folder", "eventcircle/videos");
 
-        const videoUploadResponse = await axios.post(
-          `/api/upload`,
-          videoFormData,
+        const videoRes = await fetch(
+          "https://api.cloudinary.com/v1_1/dewytontf/video/upload",
           {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-            onUploadProgress: (progressEvent) => {
-              const percentCompleted = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total
-              );
-              setUploadProgress(percentCompleted);
-            },
+            method: "POST",
+            body: videoFormData,
           }
         );
+
+        const videoData = await videoRes.json();
+        const videoUrl = videoData.secure_url;
 
         // Upload thumbnail
         const thumbnailFormData = new FormData();
@@ -749,7 +742,7 @@ export default function CreateEventForm() {
           .post("/api/events", {
             ...values,
             eventLocation: locationData || { address: values.eventLocation },
-            eventVideo: videoUploadResponse.data.url,
+            eventVideo: videoUrl,
             videoThumbnail: thumbnailUploadResponse.data.url,
             creator: session.user.id,
           })
@@ -1088,11 +1081,18 @@ export default function CreateEventForm() {
                   <Label>Age Restrictions</Label>
                   <div className="space-y-2 mt-2">
                     {ageRestrictionOptions.map((option) => (
-                      <div key={option.value} className="flex items-center space-x-2">
+                      <div
+                        key={option.value}
+                        className="flex items-center space-x-2"
+                      >
                         <Checkbox
                           id={option.value}
-                          checked={formik.values.ageRestrictions.includes(option.value)}
-                          onCheckedChange={() => handleAgeRestrictionChange(option.value)}
+                          checked={formik.values.ageRestrictions.includes(
+                            option.value
+                          )}
+                          onCheckedChange={() =>
+                            handleAgeRestrictionChange(option.value)
+                          }
                         />
                         <Label htmlFor={option.value}>{option.label}</Label>
                       </div>
@@ -1231,7 +1231,9 @@ export default function CreateEventForm() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={formik.isSubmitting || uploading || thumbnailUploading}
+                disabled={
+                  formik.isSubmitting || uploading || thumbnailUploading
+                }
               >
                 {formik.isSubmitting || uploading || thumbnailUploading
                   ? "Creating Event..."
