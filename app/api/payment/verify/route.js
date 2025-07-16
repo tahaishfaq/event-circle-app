@@ -46,15 +46,15 @@
 // }
 
 
-import { NextResponse } from "next/server"
-import axios from "axios"
-import { connectDB } from "@/lib/mongodb"
-import Event from "@/models/Event"
-import User from "@/models/User"
+// import { NextResponse } from "next/server"
+// import axios from "axios"
+// import { connectDB } from "@/lib/mongodb"
+// import Event from "@/models/Event"
+// import User from "@/models/User"
 
 
-import { generateTicketPDF } from "../../../../lib/ticketGenerator"
-import { sendTicketEmail } from "../../../../lib/emailService"
+// import { generateTicketPDF } from "../../../../lib/ticketGenerator"
+// import { sendTicketEmail } from "../../../../lib/emailService"
 
 // export async function POST(request) {
 //   try {
@@ -207,6 +207,19 @@ import { sendTicketEmail } from "../../../../lib/emailService"
 //   }
 // }
 
+// function generateTicketNumber() {
+//   return `TKT-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
+// }
+
+
+import { NextResponse } from "next/server";
+import axios from "axios";
+import { connectDB } from "@/lib/mongodb";
+import Event from "@/models/Event";
+import User from "@/models/User";
+import { generateTicketPDF } from "../../../../lib/ticketGenerator";
+import { sendTicketEmail } from "../../../../lib/emailService";
+
 export async function POST(request) {
   try {
     const { reference } = await request.json();
@@ -214,17 +227,19 @@ export async function POST(request) {
       console.error("No reference provided");
       return NextResponse.json(
         { success: false, message: "No payment reference provided" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     // Verify payment with Paystack
-    const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
-      headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` },
-    }).catch((error) => {
-      console.error("Paystack API error:", error.response?.data || error.message);
-      throw new Error(`Paystack API error: ${error.response?.data?.message || error.message}`);
-    });
+    const response = await axios
+      .get(`https://api.paystack.co/transaction/verify/${reference}`, {
+        headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` },
+      })
+      .catch((error) => {
+        console.error("Paystack API error:", error.response?.data || error.message);
+        throw new Error(`Paystack API error: ${error.response?.data?.message || error.message}`);
+      });
 
     console.log("Paystack API response:", response.data);
     const paymentData = response.data.data;
@@ -233,7 +248,7 @@ export async function POST(request) {
       console.error("Payment not successful:", paymentData.status);
       return NextResponse.json(
         { success: false, message: `Payment verification failed: ${paymentData.status}` },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -244,11 +259,10 @@ export async function POST(request) {
       console.error("Missing eventId or userId in metadata:", paymentData.metadata);
       return NextResponse.json(
         { success: false, message: "Invalid payment metadata" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    // Get event and user details
     const [event, user] = await Promise.all([
       Event.findById(eventId).populate("creator", "fullName username email"),
       User.findById(userId, "fullName username email"),
@@ -259,27 +273,25 @@ export async function POST(request) {
       console.error("Event or user not found:", { eventId, userId });
       return NextResponse.json(
         { success: false, message: "Event or user not found" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
-    // Check for existing attendee and capacity
     const existingAttendee = event.attendees.find((attendee) => attendee.user.toString() === userId);
     if (existingAttendee) {
       return NextResponse.json(
         { success: false, message: "You already have a ticket for this event" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     if (event.attendees.length + quantity > event.capacity) {
       return NextResponse.json(
         { success: false, message: "Event is sold out" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    // Generate ticket numbers and update event
     const newAttendees = Array.from({ length: quantity }, () => ({
       user: userId,
       purchaseDate: new Date(),
@@ -298,7 +310,6 @@ export async function POST(request) {
       $push: { attendees: { $each: newAttendees } },
     });
 
-    // Generate ticket PDF
     const ticketData = {
       ticketNumbers: newAttendees.map((a) => a.ticketNumber),
       eventName: event.eventName,
@@ -356,6 +367,7 @@ export async function POST(request) {
             reference: reference,
           },
         });
+        console.log(`Ticket email queued for ${user.email}`);
       } catch (emailError) {
         console.error("Failed to send ticket email:", emailError.message);
       }
@@ -366,11 +378,11 @@ export async function POST(request) {
     console.error("Payment verification error:", error.message, error.stack);
     return NextResponse.json(
       { success: false, message: `Payment verification failed: ${error.message}` },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
 function generateTicketNumber() {
-  return `TKT-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
+  return `TKT-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
 }
