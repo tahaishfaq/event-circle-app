@@ -794,6 +794,15 @@ export default function CreateEventForm() {
   const handleVideoChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
+      const maxSizeMB = 40; // Adjust based on Cloudinary plan
+      const maxSizeBytes = maxSizeMB * 1024 * 1024;
+      if (file.size > maxSizeBytes) {
+        setVideoError(`Video file exceeds ${maxSizeMB} MB limit.`);
+        setEventVideo(null);
+        videoInputRef.current.value = null;
+        alert(`Video file exceeds ${maxSizeMB} MB limit.`);
+        return;
+      }
       try {
         await checkVideoDuration(file);
         setEventVideo(file);
