@@ -217,12 +217,11 @@ import axios from "axios";
 import { connectDB } from "@/lib/mongodb";
 import Event from "@/models/Event";
 import User from "@/models/User";
-import { generateTicketPDF } from "../../../../lib/ticketGenerator";
-import { sendTicketEmail } from "../../../../lib/emailService";
 
 export async function POST(request) {
   try {
     const { reference } = await request.json();
+    console.log("Received verification request with reference:", reference);
     if (!reference) {
       console.error("No reference provided");
       return NextResponse.json(
@@ -279,6 +278,7 @@ export async function POST(request) {
 
     const existingAttendee = event.attendees.find((attendee) => attendee.user.toString() === userId);
     if (existingAttendee) {
+      console.warn("Duplicate attendee detected:", { userId, eventId });
       return NextResponse.json(
         { success: false, message: "You already have a ticket for this event" },
         { status: 400 }
@@ -286,6 +286,7 @@ export async function POST(request) {
     }
 
     if (event.attendees.length + quantity > event.capacity) {
+      console.warn("Event capacity exceeded:", { capacity: event.capacity, attendees: event.attendees.length, quantity });
       return NextResponse.json(
         { success: false, message: "Event is sold out" },
         { status: 400 }
@@ -309,21 +310,6 @@ export async function POST(request) {
     await Event.findByIdAndUpdate(eventId, {
       $push: { attendees: { $each: newAttendees } },
     });
-
-    const ticketData = {
-      ticketNumbers: newAttendees.map((a) => a.ticketNumber),
-      eventName: event.eventName,
-      eventDate: event.eventDate,
-      eventTime: event.eventTime,
-      eventLocation: event.eventLocation,
-      attendeeName: user.fullName,
-      attendeeEmail: user.email,
-      quantity: quantity,
-      totalAmount: paymentData.amount / 100,
-      reference,
-    };
-
-    const ticketPDF = await generateTicketPDF(ticketData);
 
     // Prepare response
     const responseData = {
@@ -350,29 +336,7 @@ export async function POST(request) {
       })),
     };
 
-    // Send email asynchronously
-    setTimeout(async () => {
-      try {
-        await sendTicketEmail({
-          to: user.email,
-          attendeeName: user.fullName,
-          eventName: event.eventName,
-          ticketPDF,
-          invoiceData: {
-            invoiceNumber: `INV-${reference}`,
-            date: new Date(),
-            amount: paymentData.amount / 100,
-            platformFee: (paymentData.amount / 100) * 0.13,
-            quantity: quantity,
-            reference: reference,
-          },
-        });
-        console.log(`Ticket email queued for ${user.email}`);
-      } catch (emailError) {
-        console.error("Failed to send ticket email:", emailError.message);
-      }
-    }, 0);
-
+    console.log("Sending success response:", responseData);
     return NextResponse.json(responseData);
   } catch (error) {
     console.error("Payment verification error:", error.message, error.stack);

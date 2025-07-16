@@ -280,7 +280,7 @@ export default function PaymentCallbackPage() {
         setEventData(response.data.event);
         toast({
           title: "Success",
-          description: "Payment successful! Your ticket has been confirmed. A confirmation email will be sent shortly.",
+          description: "Payment successful! Your ticket has been confirmed.",
         });
       } else {
         setStatus("failed");
@@ -328,9 +328,7 @@ export default function PaymentCallbackPage() {
                 <div className="text-center space-y-4">
                   <CheckCircle className="h-16 w-16 text-green-600 mx-auto" aria-hidden="true" />
                   <h2 className="text-2xl font-bold text-green-600">Payment Successful!</h2>
-                  <p className="text-gray-600">
-                    Your ticket has been confirmed. A confirmation email will be sent shortly (check your spam/junk folder if not received).
-                  </p>
+                  <p className="text-gray-600">Your ticket has been confirmed.</p>
                 </div>
               </CardContent>
             </Card>
