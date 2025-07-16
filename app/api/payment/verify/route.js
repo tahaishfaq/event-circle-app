@@ -56,84 +56,249 @@ import User from "@/models/User"
 import { generateTicketPDF } from "../../../../lib/ticketGenerator"
 import { sendTicketEmail } from "../../../../lib/emailService"
 
+// export async function POST(request) {
+//   try {
+//     const { reference } = await request.json()
+
+//     // Verify payment with Paystack
+//     const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
+//       headers: {
+//         Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+//       },
+//     })
+
+//     const paymentData = response.data.data
+
+//     if (paymentData.status === "success") {
+//       await connectDB()
+
+//       const { eventId, userId, quantity = 1 } = paymentData.metadata
+
+//       // Get event and user details
+//       const [event, user] = await Promise.all([
+//         Event.findById(eventId).populate("creator", "fullName username email"),
+//         User.findById(userId, "fullName username email"),
+//       ])
+
+//       if (!event || !user) {
+//         return NextResponse.json(
+//           {
+//             success: false,
+//             message: "Event or user not found",
+//           },
+//           { status: 404 },
+//         )
+//       }
+
+//       // Check if user already has a ticket (prevent double booking)
+//       const existingAttendee = event.attendees.find((attendee) => attendee.user.toString() === userId)
+
+//       if (existingAttendee) {
+//         return NextResponse.json(
+//           {
+//             success: false,
+//             message: "You already have a ticket for this event",
+//           },
+//           { status: 400 },
+//         )
+//       }
+
+//       // Check if event has capacity
+//       if (event.attendees.length + quantity > event.capacity) {
+//         return NextResponse.json(
+//           {
+//             success: false,
+//             message: "Event is sold out",
+//           },
+//           { status: 400 },
+//         )
+//       }
+
+//       // Generate ticket numbers and add user to event attendees
+//       const newAttendees = Array.from({ length: quantity }, () => ({
+//         user: userId,
+//         purchaseDate: new Date(),
+//         paymentReference: reference,
+//         amount: paymentData.amount / 100 / quantity, // Convert from kobo and divide by quantity
+//         ticketNumber: generateTicketNumber(),
+//         paystackData: {
+//           transactionId: paymentData.id,
+//           reference: paymentData.reference,
+//           channel: paymentData.channel,
+//           paidAt: paymentData.paid_at,
+//         },
+//       }))
+
+//       await Event.findByIdAndUpdate(eventId, {
+//       $push: { attendees: { $each: newAttendees } },
+//     });
+
+//     // Generate PDF ticket
+//     const ticketData = {
+//       ticketNumbers: newAttendees.map((a) => a.ticketNumber),
+//       eventName: event.eventName,
+//       eventDate: event.eventDate,
+//       eventTime: event.eventTime,
+//       eventLocation: event.eventLocation,
+//       attendeeName: user.fullName,
+//       attendeeEmail: user.email,
+//       quantity: quantity,
+//       totalAmount: paymentData.amount / 100,
+//     };
+//       const ticketPDF = await generateTicketPDF(ticketData)
+
+//       // Send ticket and invoice via email
+//       await sendTicketEmail({
+//         to: user.email,
+//         attendeeName: user.fullName,
+//         eventName: event.eventName,
+//         ticketPDF,
+//         invoiceData: {
+//           invoiceNumber: `INV-${reference}`,
+//           date: new Date(),
+//           amount: paymentData.amount / 100,
+//           platformFee: (paymentData.amount / 100) * 0.13,
+//           quantity: quantity,
+//           reference: reference,
+//         },
+//       });
+
+//       return NextResponse.json({
+//         success: true,
+//         message: "Payment verified and ticket purchased successfully",
+//         payment: {
+//           reference: paymentData.reference,
+//           amount: paymentData.amount / 100,
+//           paid_at: paymentData.paid_at,
+//           channel: paymentData.channel,
+//         },
+//         event: {
+//           _id: event._id,
+//           eventName: event.eventName,
+//           eventDate: event.eventDate,
+//           eventTime: event.eventTime,
+//           eventLocation: event.eventLocation,
+//           duration: event.duration,
+//           videoThumbnail: event.videoThumbnail,
+//         },
+//         tickets: newAttendees.map((a) => ({
+//           ticketNumber: a.ticketNumber,
+//           amount: a.amount,
+//         })),
+//       })
+//     } else {
+//       return NextResponse.json(
+//         {
+//           success: false,
+//           message: "Payment verification failed",
+//         },
+//         { status: 400 },
+//       )
+//     }
+//   } catch (error) {
+//     console.error("Payment verification error:", error)
+//     return NextResponse.json(
+//       {
+//         success: false,
+//         message: "Payment verification failed",
+//       },
+//       { status: 500 },
+//     )
+//   }
+// }
+
 export async function POST(request) {
   try {
-    const { reference } = await request.json()
+    const { reference } = await request.json();
+    if (!reference) {
+      console.error("No reference provided");
+      return NextResponse.json(
+        { success: false, message: "No payment reference provided" },
+        { status: 400 },
+      );
+    }
 
     // Verify payment with Paystack
     const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
-      headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+      headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` },
+    }).catch((error) => {
+      console.error("Paystack API error:", error.response?.data || error.message);
+      throw new Error(`Paystack API error: ${error.response?.data?.message || error.message}`);
+    });
+
+    console.log("Paystack API response:", response.data);
+    const paymentData = response.data.data;
+
+    if (paymentData.status !== "success") {
+      console.error("Payment not successful:", paymentData.status);
+      return NextResponse.json(
+        { success: false, message: `Payment verification failed: ${paymentData.status}` },
+        { status: 400 },
+      );
+    }
+
+    await connectDB();
+    const { eventId, userId, quantity = 1 } = paymentData.metadata;
+
+    if (!eventId || !userId) {
+      console.error("Missing eventId or userId in metadata:", paymentData.metadata);
+      return NextResponse.json(
+        { success: false, message: "Invalid payment metadata" },
+        { status: 400 },
+      );
+    }
+
+    // Get event and user details
+    const [event, user] = await Promise.all([
+      Event.findById(eventId).populate("creator", "fullName username email"),
+      User.findById(userId, "fullName username email"),
+    ]);
+
+    console.log("Event:", event, "User:", user);
+    if (!event || !user) {
+      console.error("Event or user not found:", { eventId, userId });
+      return NextResponse.json(
+        { success: false, message: "Event or user not found" },
+        { status: 404 },
+      );
+    }
+
+    // Check for existing attendee and capacity
+    const existingAttendee = event.attendees.find((attendee) => attendee.user.toString() === userId);
+    if (existingAttendee) {
+      return NextResponse.json(
+        { success: false, message: "You already have a ticket for this event" },
+        { status: 400 },
+      );
+    }
+
+    if (event.attendees.length + quantity > event.capacity) {
+      return NextResponse.json(
+        { success: false, message: "Event is sold out" },
+        { status: 400 },
+      );
+    }
+
+    // Generate ticket numbers and update event
+    const newAttendees = Array.from({ length: quantity }, () => ({
+      user: userId,
+      purchaseDate: new Date(),
+      paymentReference: reference,
+      amount: paymentData.amount / 100 / quantity,
+      ticketNumber: generateTicketNumber(),
+      paystackData: {
+        transactionId: paymentData.id,
+        reference: paymentData.reference,
+        channel: paymentData.channel,
+        paidAt: paymentData.paid_at,
       },
-    })
+    }));
 
-    const paymentData = response.data.data
-
-    if (paymentData.status === "success") {
-      await connectDB()
-
-      const { eventId, userId, quantity = 1 } = paymentData.metadata
-
-      // Get event and user details
-      const [event, user] = await Promise.all([
-        Event.findById(eventId).populate("creator", "fullName username email"),
-        User.findById(userId, "fullName username email"),
-      ])
-
-      if (!event || !user) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Event or user not found",
-          },
-          { status: 404 },
-        )
-      }
-
-      // Check if user already has a ticket (prevent double booking)
-      const existingAttendee = event.attendees.find((attendee) => attendee.user.toString() === userId)
-
-      if (existingAttendee) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "You already have a ticket for this event",
-          },
-          { status: 400 },
-        )
-      }
-
-      // Check if event has capacity
-      if (event.attendees.length + quantity > event.capacity) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Event is sold out",
-          },
-          { status: 400 },
-        )
-      }
-
-      // Generate ticket numbers and add user to event attendees
-      const newAttendees = Array.from({ length: quantity }, () => ({
-        user: userId,
-        purchaseDate: new Date(),
-        paymentReference: reference,
-        amount: paymentData.amount / 100 / quantity, // Convert from kobo and divide by quantity
-        ticketNumber: generateTicketNumber(),
-        paystackData: {
-          transactionId: paymentData.id,
-          reference: paymentData.reference,
-          channel: paymentData.channel,
-          paidAt: paymentData.paid_at,
-        },
-      }))
-
-      await Event.findByIdAndUpdate(eventId, {
+    await Event.findByIdAndUpdate(eventId, {
       $push: { attendees: { $each: newAttendees } },
     });
 
-    // Generate PDF ticket
+    // Generate ticket PDF
     const ticketData = {
       ticketNumbers: newAttendees.map((a) => a.ticketNumber),
       eventName: event.eventName,
@@ -144,73 +309,68 @@ export async function POST(request) {
       attendeeEmail: user.email,
       quantity: quantity,
       totalAmount: paymentData.amount / 100,
+      reference,
     };
-      const ticketPDF = await generateTicketPDF(ticketData)
 
-      // Send ticket and invoice via email
-      await sendTicketEmail({
-        to: user.email,
-        attendeeName: user.fullName,
-        eventName: event.eventName,
-        ticketPDF,
-        invoiceData: {
-          invoiceNumber: `INV-${reference}`,
-          date: new Date(),
-          amount: paymentData.amount / 100,
-          platformFee: (paymentData.amount / 100) * 0.13,
-          quantity: quantity,
-          reference: reference,
-        },
-      });
+    const ticketPDF = await generateTicketPDF(ticketData);
 
-      return NextResponse.json({
-        success: true,
-        message: "Payment verified and ticket purchased successfully",
-        payment: {
-          reference: paymentData.reference,
-          amount: paymentData.amount / 100,
-          paid_at: paymentData.paid_at,
-          channel: paymentData.channel,
-        },
-        event: {
-          _id: event._id,
-          eventName: event.eventName,
-          eventDate: event.eventDate,
-          eventTime: event.eventTime,
-          eventLocation: event.eventLocation,
-          duration: event.duration,
-          videoThumbnail: event.videoThumbnail,
-        },
-        tickets: newAttendees.map((a) => ({
-          ticketNumber: a.ticketNumber,
-          amount: a.amount,
-        })),
-      })
-    } else {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Payment verification failed",
-        },
-        { status: 400 },
-      )
-    }
-  } catch (error) {
-    console.error("Payment verification error:", error)
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Payment verification failed",
+    // Prepare response
+    const responseData = {
+      success: true,
+      message: "Payment verified and ticket purchased successfully",
+      payment: {
+        reference: paymentData.reference,
+        amount: paymentData.amount / 100,
+        paid_at: paymentData.paid_at,
+        channel: paymentData.channel,
       },
+      event: {
+        _id: event._id,
+        eventName: event.eventName,
+        eventDate: event.eventDate,
+        eventTime: event.eventTime,
+        eventLocation: event.eventLocation,
+        duration: event.duration,
+        videoThumbnail: event.videoThumbnail,
+      },
+      tickets: newAttendees.map((a) => ({
+        ticketNumber: a.ticketNumber,
+        amount: a.amount,
+      })),
+    };
+
+    // Send email asynchronously
+    setTimeout(async () => {
+      try {
+        await sendTicketEmail({
+          to: user.email,
+          attendeeName: user.fullName,
+          eventName: event.eventName,
+          ticketPDF,
+          invoiceData: {
+            invoiceNumber: `INV-${reference}`,
+            date: new Date(),
+            amount: paymentData.amount / 100,
+            platformFee: (paymentData.amount / 100) * 0.13,
+            quantity: quantity,
+            reference: reference,
+          },
+        });
+      } catch (emailError) {
+        console.error("Failed to send ticket email:", emailError.message);
+      }
+    }, 0);
+
+    return NextResponse.json(responseData);
+  } catch (error) {
+    console.error("Payment verification error:", error.message, error.stack);
+    return NextResponse.json(
+      { success: false, message: `Payment verification failed: ${error.message}` },
       { status: 500 },
-    )
+    );
   }
 }
 
 function generateTicketNumber() {
   return `TKT-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`
-}
-
-function generateQRCode(ticketNumber) {
-  return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${ticketNumber}`
 }
