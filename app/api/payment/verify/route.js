@@ -217,82 +217,84 @@ import axios from "axios";
 import { connectDB } from "@/lib/mongodb";
 import Event from "@/models/Event";
 import User from "@/models/User";
+import { generateTicketPDF } from "../../../../lib/ticketGenerator";
+import { sendTicketEmail } from "../../../../lib/emailService";
 
 export async function POST(request) {
   try {
     const { reference } = await request.json();
-    console.log("Received verification request with reference:", reference);
     if (!reference) {
-      console.error("No reference provided");
+      return NextResponse.json({ message: "Missing payment reference" }, { status: 400 });
+    }
+
+    await connectDB();
+
+    // Check if payment was already processed
+    const existingEvent = await Event.findOne({
+      "attendees.paymentReference": reference,
+    });
+    if (existingEvent) {
       return NextResponse.json(
-        { success: false, message: "No payment reference provided" },
+        { message: "Payment already processed" },
         { status: 400 }
       );
     }
 
     // Verify payment with Paystack
-    const response = await axios
-      .get(`https://api.paystack.co/transaction/verify/${reference}`, {
-        headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` },
-      })
-      .catch((error) => {
-        console.error("Paystack API error:", error.response?.data || error.message);
-        throw new Error(`Paystack API error: ${error.response?.data?.message || error.message}`);
-      });
+    const response = await axios.get(
+      `https://api.paystack.co/transaction/verify/${reference}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        },
+        timeout: 10000,
+      }
+    );
 
-    console.log("Paystack API response:", response.data);
     const paymentData = response.data.data;
-
     if (paymentData.status !== "success") {
-      console.error("Payment not successful:", paymentData.status);
       return NextResponse.json(
-        { success: false, message: `Payment verification failed: ${paymentData.status}` },
+        { message: `Payment verification failed: ${paymentData.status}` },
         { status: 400 }
       );
     }
 
-    await connectDB();
     const { eventId, userId, quantity = 1 } = paymentData.metadata;
 
-    if (!eventId || !userId) {
-      console.error("Missing eventId or userId in metadata:", paymentData.metadata);
-      return NextResponse.json(
-        { success: false, message: "Invalid payment metadata" },
-        { status: 400 }
-      );
-    }
-
+    // Fetch event and user in parallel
     const [event, user] = await Promise.all([
       Event.findById(eventId).populate("creator", "fullName username email"),
       User.findById(userId, "fullName username email"),
     ]);
 
-    console.log("Event:", event, "User:", user);
     if (!event || !user) {
-      console.error("Event or user not found:", { eventId, userId });
       return NextResponse.json(
-        { success: false, message: "Event or user not found" },
+        { message: "Event or user not found" },
         { status: 404 }
       );
     }
 
-    const existingAttendee = event.attendees.find((attendee) => attendee.user.toString() === userId);
+    // Check for duplicate booking
+    const existingAttendee = event.attendees.find(
+      (attendee) => attendee.user.toString() === userId
+    );
     if (existingAttendee) {
-      console.warn("Duplicate attendee detected:", { userId, eventId });
       return NextResponse.json(
-        { success: false, message: "You already have a ticket for this event" },
+        { message: "You already have a ticket for this event" },
         { status: 400 }
       );
     }
 
-    if (event.attendees.length + quantity > event.capacity) {
-      console.warn("Event capacity exceeded:", { capacity: event.capacity, attendees: event.attendees.length, quantity });
+    // Re-validate capacity in transaction
+    const remainingCapacity = event.capacity - event.attendees.length;
+    if (quantity > remainingCapacity) {
       return NextResponse.json(
-        { success: false, message: "Event is sold out" },
+        { message: `Only ${remainingCapacity} ticket(s) remaining` },
         { status: 400 }
       );
     }
 
+    // Generate ticket numbers and update event
     const newAttendees = Array.from({ length: quantity }, () => ({
       user: userId,
       purchaseDate: new Date(),
@@ -311,8 +313,36 @@ export async function POST(request) {
       $push: { attendees: { $each: newAttendees } },
     });
 
-    // Prepare response
-    const responseData = {
+    // Generate and send ticket
+    const ticketData = {
+      ticketNumbers: newAttendees.map((a) => a.ticketNumber),
+      eventName: event.eventName,
+      eventDate: event.eventDate,
+      eventTime: event.eventTime,
+      eventLocation: event.eventLocation,
+      attendeeName: user.fullName,
+      attendeeEmail: user.email,
+      quantity,
+      totalAmount: paymentData.amount / 100,
+    };
+
+    const ticketPDF = await generateTicketPDF(ticketData);
+    await sendTicketEmail({
+      to: user.email,
+      attendeeName: user.fullName,
+      eventName: event.eventName,
+      ticketPDF,
+      invoiceData: {
+        invoiceNumber: `INV-${reference}`,
+        date: new Date(),
+        amount: paymentData.amount / 100,
+        platformFee: (paymentData.amount / 100) * 0.13,
+        quantity,
+        reference,
+      },
+    });
+
+    return NextResponse.json({
       success: true,
       message: "Payment verified and ticket purchased successfully",
       payment: {
@@ -334,15 +364,19 @@ export async function POST(request) {
         ticketNumber: a.ticketNumber,
         amount: a.amount,
       })),
-    };
-
-    console.log("Sending success response:", responseData);
-    return NextResponse.json(responseData);
+    });
   } catch (error) {
-    console.error("Payment verification error:", error.message, error.stack);
+    console.error("Payment verification error:", {
+      message: error.message,
+      stack: error.stack,
+      response: error.response?.data,
+    });
     return NextResponse.json(
-      { success: false, message: `Payment verification failed: ${error.message}` },
-      { status: 500 }
+      {
+        message: "Payment verification failed",
+        error: error.response?.data?.message || error.message,
+      },
+      { status: error.response?.status || 500 }
     );
   }
 }
