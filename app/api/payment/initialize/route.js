@@ -47,46 +47,63 @@
 // }
 
 
-import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { connectDB } from "@/lib/mongodb"
-import Event from "@/models/Event"
-import axios from "axios"
-import { authOptions } from "../../auth/[...nextauth]/route"
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { connectDB } from "@/lib/mongodb";
+import Event from "@/models/Event";
+import axios from "axios";
+import { authOptions } from "../../auth/[...nextauth]/route";
+import { v4 as uuidv4 } from "uuid";
 
 export async function POST(request) {
   try {
-    const session = await getServerSession(authOptions)
-
+    // Authenticate user
+    const session = await getServerSession(authOptions);
     if (!session) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { eventId, amount, email, phone, quantity = 1, metadata = {} } = await request.json()
+    // Parse request body
+    const { eventId, amount, email, phone, quantity = 1, metadata = {} } = await request.json();
+    if (!eventId || !amount || !email) {
+      return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
+    }
 
-    await connectDB()
+    await connectDB();
 
-    // Get event and creator details
-    const event = await Event.findById(eventId).populate("creator", "paystackSubaccountCode fullName")
-
+    // Fetch event with creator details
+    const event = await Event.findById(eventId).populate("creator", "paystackSubaccountCode fullName");
     if (!event) {
-      return NextResponse.json({ message: "Event not found" }, { status: 404 })
+      return NextResponse.json({ message: "Event not found" }, { status: 404 });
     }
 
     if (!event.creator.paystackSubaccountCode) {
-      return NextResponse.json({ message: "Event creator must set up payment account first" }, { status: 400 })
+      return NextResponse.json({ message: "Event creator must set up payment account" }, { status: 400 });
     }
 
-    // Calculate amounts in kobo (Paystack uses kobo)
-    const totalAmountKobo = Math.round(amount * 100)
+    // Validate capacity
+    const remainingCapacity = event.capacity - event.attendees.length;
+    if (quantity > remainingCapacity) {
+      return NextResponse.json(
+        { message: `Only ${remainingCapacity} ticket(s) remaining` },
+        { status: 400 }
+      );
+    }
 
-    // Generate unique reference
-    const reference = `EVT_${eventId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    // Calculate amount in kobo (Paystack uses kobo for NGN)
+    const totalAmountKobo = Math.round(amount * 100);
+    if (totalAmountKobo <= 0) {
+      return NextResponse.json({ message: "Invalid amount" }, { status: 400 });
+    }
 
+    // Generate idempotent reference
+    const reference = `EVT_${eventId}_${uuidv4()}`;
+
+    // Paystack payload
     const paystackData = {
       email,
       amount: totalAmountKobo,
-      currency: "ZAR", // Paystack primarily supports NGN, but you can use USD for international
+      currency: "NGN", // Changed to NGN for Paystack compatibility
       reference,
       callback_url: `${process.env.NEXTAUTH_URL}/payment/callback`,
       metadata: {
@@ -99,38 +116,48 @@ export async function POST(request) {
         ...metadata,
       },
       subaccount: event.creator.paystackSubaccountCode,
-      transaction_charge: Math.round(totalAmountKobo * 0.13), // Platform takes 13%
-      bearer: "subaccount", // Subaccount bears the transaction fee
+      transaction_charge: Math.round(totalAmountKobo * 0.13), // 13% platform fee
+      bearer: "subaccount",
+    };
+
+    // Initialize Paystack transaction
+    const response = await axios.post(
+      "https://api.paystack.co/transaction/initialize",
+      paystackData,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          "Content-Type": "application/json",
+          "Idempotency-Key": reference, // Prevent duplicate transactions
+        },
+        timeout: 10000, // 10s timeout for API call
+      }
+    );
+
+    if (!response.data.status) {
+      throw new Error(response.data.message || "Payment initialization failed");
     }
 
-    const response = await axios.post("https://api.paystack.co/transaction/initialize", paystackData, {
-      headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-        "Content-Type": "application/json",
-      },
-    })
-
-    if (response.data.status) {
-      return NextResponse.json({
-        authorization_url: response.data.data.authorization_url,
-        access_code: response.data.data.access_code,
-        reference: response.data.data.reference,
-      })
-    } else {
-      return NextResponse.json({ message: "Payment initialization failed" }, { status: 400 })
-    }
+    return NextResponse.json({
+      authorization_url: response.data.data.authorization_url,
+      access_code: response.data.data.access_code,
+      reference: response.data.data.reference,
+    });
   } catch (error) {
-    console.error("Payment initialization error:", error.response?.data || error.message)
+    console.error("Payment initialization error:", {
+      message: error.message,
+      stack: error.stack,
+      response: error.response?.data,
+    });
     return NextResponse.json(
       {
         message: "Payment initialization failed",
         error: error.response?.data?.message || error.message,
       },
-      { status: 500 },
-    )
+      { status: error.response?.status || 500 }
+    );
   }
 }
-
 
 
 // import { NextResponse } from "next/server"
