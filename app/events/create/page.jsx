@@ -701,18 +701,26 @@ export default function CreateEventForm() {
         // Upload video
         const videoFormData = new FormData();
         videoFormData.append("file", eventVideo);
-        videoFormData.append("upload_preset", "eventcircle_unsigned"); // your unsigned preset
+        videoFormData.append("upload_preset", "eventcircle_unsigned");
         videoFormData.append("folder", "eventcircle/videos");
 
-        const videoRes = await fetch(
+        const videoRes = await axios.post(
           "https://api.cloudinary.com/v1_1/dewytontf/video/upload",
+          videoFormData,
           {
-            method: "POST",
-            body: videoFormData,
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+            onUploadProgress: (progressEvent) => {
+              const percentCompleted = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+              setUploadProgress(percentCompleted);
+            },
           }
         );
 
-        const videoData = await videoRes.json();
+        const videoData = videoRes.data;
         const videoUrl = videoData.secure_url;
 
         // Upload thumbnail
